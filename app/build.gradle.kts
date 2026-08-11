@@ -49,6 +49,7 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2025.01.00"))
 
     implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
@@ -58,12 +59,16 @@ dependencies {
     // AndroidX
     // ============================================================
 
-    implementation("androidx.core:core-ktx:1.16.0")
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.13.0")
+
     implementation("androidx.activity:activity-compose:1.10.1")
+
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.2")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.2")
+
     implementation("androidx.navigation:navigation-compose:2.9.0")
-    implementation(libs.androidx.appcompat)
 
     // ============================================================
     // CameraX
@@ -78,13 +83,8 @@ dependencies {
     // Google ML Kit
     // ============================================================
 
-    // ML Kit Text Recognition
     implementation("com.google.mlkit:text-recognition:16.0.1")
-
-    // ML Kit Barcode Scanning
     implementation("com.google.mlkit:barcode-scanning:17.3.0")
-
-    // Google ML Kit Document Scanner
     implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0-beta1")
 
     // ============================================================

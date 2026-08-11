@@ -12,6 +12,8 @@ import cvam.dignity.dashyhub.tools.aadhaar.AadhaarScreen
 import cvam.dignity.dashyhub.tools.aadhaar.AadhaarStudioScreen
 import cvam.dignity.dashyhub.tools.image.ImageToolsScreen
 import cvam.dignity.dashyhub.tools.image.passport_photo_maker.PassportPhotoScreen
+import cvam.dignity.dashyhub.tools.neonpen.NeonPenScreen
+import cvam.dignity.dashyhub.tools.neonpen.NeonPenSettingsScreen
 import cvam.dignity.dashyhub.tools.other.OtherToolsScreen
 import cvam.dignity.dashyhub.tools.other.WhatsappCheckerScreen
 import cvam.dignity.dashyhub.tools.other.boga.BogaScannerScreen
@@ -64,7 +66,22 @@ fun AppNavigation() {
         }
 
         composable("boga") {
-            BogaScannerScreen()
+            BogaScannerScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("neon_pen") {
+            NeonPenScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToSettings = { navController.navigate("neon_pen_settings") }
+            )
+        }
+
+        composable("neon_pen_settings") {
+            NeonPenSettingsScreen(
+                onBack = { navController.popBackStack() }
+            )
         }
     }
 }

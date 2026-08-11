@@ -1,10 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" >
 
-    <!-- Required permissions for saving and loading scanned documents -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- ========================================================= -->
+    <!-- Existing DashyHub permissions -->
+    <!-- Keep all permissions already present in DashyHub here -->
+    <!-- ========================================================= -->
+
+
+    <!-- ========================================================= -->
+    <!-- Neon Pen Writer permissions -->
+    <!-- ========================================================= -->
+
+    <!-- Required for the floating pen overlay -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!-- Required for the Neon overlay foreground service -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+    <!-- Required for specialUse foreground service on newer Android -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
 
     <application
         android:allowBackup="true"
@@ -14,30 +31,62 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.DashyHub" >
+        android:theme="@style/Theme.DashyHub">
+
+        <!-- ===================================================== -->
+        <!-- EXISTING DASHYHUB MAIN ACTIVITY -->
+        <!-- ===================================================== -->
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.DashyHub"
-            android:windowSoftInputMode="adjustResize" >
+            android:windowSoftInputMode="adjustResize">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
 
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+
+        <!-- ===================================================== -->
+        <!-- NEON PEN OVERLAY SERVICE -->
+        <!-- ===================================================== -->
+
+        <service
+            android:name=".tools.neonpen.NeonOverlayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Floating neon drawing overlay displayed over other applications" />
+
+        </service>
 
 
-        <!-- ML Kit Document Scanner auto download meta-data (optional but recommended) -->
-        <meta-data
-            android:name="com.google.mlkit.vision.DEPENDENCIES"
-            android:value="document_scanner" />
+        <!-- ===================================================== -->
+        <!-- NEON PEN ACCESSIBILITY SERVICE -->
+        <!-- ===================================================== -->
+
+        <service
+            android:name=".tools.neonpen.NeonAccessibilityService"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+
+        </service>
+
     </application>
 
 </manifest>

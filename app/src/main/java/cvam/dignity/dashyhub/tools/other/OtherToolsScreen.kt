@@ -8,6 +8,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -55,11 +57,20 @@ fun OtherToolsScreen(
                     icon = Icons.Default.Chat,
                     onClick = { navController.navigate("whatsapp_checker") }
                 )
+                // Second Tool Card (Boga Scanner)
                 OtherToolNavigationCard(
-                    title = "Boga Document Scanner",
-                    subtitle = "Scan and manage documents",
-                    icon = Icons.Default.Description,
+                    title = "Boga Scanner",
+                    subtitle = "Scan documents and ID cards into A4 PDF/JPEG sheets.",
+                    icon = Icons.Default.Scanner,
                     onClick = { navController.navigate("boga") }
+                )
+
+                // Third Tool Card (Neon Pen Writer)
+                OtherToolNavigationCard(
+                    title = "Neon Pen Writer",
+                    subtitle = "Draw and write over any app with a floating neon pen.",
+                    icon = Icons.Default.Edit,
+                    onClick = { navController.navigate("neon_pen") }
                 )
             }
         }

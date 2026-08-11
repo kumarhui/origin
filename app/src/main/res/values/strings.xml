@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">Dashy Hub</string>
+    <string name="app_name">Neon Pen Writer</string>
+    <string name="accessibility_service_description">Used to ensure floating controls stay accessible over all applications.</string>
 </resources>
