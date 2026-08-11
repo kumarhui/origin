@@ -26,6 +26,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -45,13 +47,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import cvam.dignity.dashyhub.tools.neonpen.PermissionUtils
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import cvam.dignity.dashyhub.service.DesiHubAccessibilityService
+import cvam.dignity.dashyhub.tools.common.SharedPermissionManager
 
 private val BrandPurple = Color(0xFF8E24AA)
 private val TextDark = Color(0xFF0F172A)
@@ -62,6 +67,10 @@ private val StatusRequiredText = Color(0xFFB91C1C)
 
 private const val PREFS_NAME = "screenshot_taker_prefs"
 
+/**
+ * Settings Screen for Testbook Screenshot Taker.
+ * Configures Default Shot Count (3), Auto-Crop Cut-off, and Auto-Advance Delay (0.3s).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenshotTakerSettingsScreen(
@@ -72,21 +81,21 @@ fun ScreenshotTakerSettingsScreen(
     val prefs = remember { context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
     var isAccessibilityEnabled by remember {
-        mutableStateOf(ScreenshotAccessibilityService.isServiceEnabled(context))
+        mutableStateOf(DesiHubAccessibilityService.isServiceEnabled(context))
     }
     var hasOverlayPermission by remember {
-        mutableStateOf(PermissionUtils.hasOverlayPermission(context))
+        mutableStateOf(SharedPermissionManager.hasOverlayPermission(context))
     }
     var isFloatingShowing by remember {
-        mutableStateOf(ScreenshotAccessibilityService.isFloatingControlVisible())
+        mutableStateOf(DesiHubAccessibilityService.isScreenshotControlVisible())
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                isAccessibilityEnabled = ScreenshotAccessibilityService.isServiceEnabled(context)
-                hasOverlayPermission = PermissionUtils.hasOverlayPermission(context)
-                isFloatingShowing = ScreenshotAccessibilityService.isFloatingControlVisible()
+                isAccessibilityEnabled = DesiHubAccessibilityService.isServiceEnabled(context)
+                hasOverlayPermission = SharedPermissionManager.hasOverlayPermission(context)
+                isFloatingShowing = DesiHubAccessibilityService.isScreenshotControlVisible()
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -130,7 +139,7 @@ fun ScreenshotTakerSettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Screenshot Accessibility Service", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextDark)
+                        Text("Accessibility Service", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextDark)
                         Text(
                             text = if (isAccessibilityEnabled) "✓ Enabled" else "✕ Required",
                             fontWeight = FontWeight.Bold,
@@ -140,18 +149,13 @@ fun ScreenshotTakerSettingsScreen(
                     }
 
                     Text(
-                        text = "Allows DashyHub to take full screen captures and perform tap gestures during multi-capture sequences.",
+                        text = "Allows Desi Hub to take full screen captures and perform tap gestures during multi-capture sequences.",
                         fontSize = 11.sp,
                         color = TextMuted
                     )
 
                     Button(
-                        onClick = {
-                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
-                        },
+                        onClick = { SharedPermissionManager.openAccessibilitySettings(context) },
                         modifier = Modifier.fillMaxWidth().height(40.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
@@ -161,73 +165,60 @@ fun ScreenshotTakerSettingsScreen(
                 }
             }
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Floating Control Overlay", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextDark)
-                        Text(
-                            text = if (isFloatingShowing) "Active ●" else "Hidden",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = if (isFloatingShowing) StatusActiveText else TextMuted
-                        )
-                    }
-
-                    Text(
-                        text = "Displays a small floating icon above other apps to trigger multi-capture sequences directly.",
-                        fontSize = 11.sp,
-                        color = TextMuted
-                    )
-
-                    Button(
-                        onClick = {
-                            if (isFloatingShowing) {
-                                ScreenshotAccessibilityService.hideFloatingControl()
-                                isFloatingShowing = false
-                            } else {
-                                if (!hasOverlayPermission) {
-                                    PermissionUtils.openOverlaySettings(context)
-                                } else {
-                                    val shown = ScreenshotAccessibilityService.showFloatingControl(context)
-                                    if (shown) {
-                                        isFloatingShowing = true
-                                        Toast.makeText(context, "Floating control enabled", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "Please enable Accessibility Service first", Toast.LENGTH_SHORT).show()
-                                    }
-                                }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(40.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isFloatingShowing) Color(0xFF0F172A) else BrandPurple
-                        )
-                    ) {
-                        Text(
-                            if (isFloatingShowing) "Hide Floating Icon" else if (hasOverlayPermission) "Show Floating Icon" else "Allow Display Over Apps",
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-            }
+            DefaultShotCountCard(context, prefs)
 
             AutoCropSettingsCard(prefs)
 
             AutoAdvanceSettingsCard(prefs)
+        }
+    }
+}
+
+@Composable
+private fun DefaultShotCountCard(context: Context, prefs: SharedPreferences) {
+    var defaultShotsInput by remember {
+        mutableStateOf(prefs.getInt(ScreenshotManager.KEY_DEFAULT_SHOT_COUNT, ScreenshotManager.DEFAULT_SHOT_COUNT).toString())
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth().border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Default Number of Shots", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = TextDark)
+            Text("Set initial screenshot count loaded when opening floating toolbar (Default: 3)", fontSize = 11.sp, color = TextMuted)
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = defaultShotsInput,
+                    onValueChange = { defaultShotsInput = it },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    modifier = Modifier.weight(1f).height(50.dp)
+                )
+
+                Button(
+                    onClick = {
+                        val count = defaultShotsInput.toIntOrNull()
+                        if (count != null && count in 1..100) {
+                            prefs.edit().putInt(ScreenshotManager.KEY_DEFAULT_SHOT_COUNT, count).apply()
+                            Toast.makeText(context, "Default shots saved: $count", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Enter a valid count (1-100)", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier.height(44.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
+                ) {
+                    Text("Save", fontSize = 12.sp)
+                }
+            }
         }
     }
 }
@@ -291,7 +282,7 @@ private fun AutoCropSettingsCard(prefs: SharedPreferences) {
 private fun AutoAdvanceSettingsCard(prefs: SharedPreferences) {
     var isAutoAdvance by remember { mutableStateOf(prefs.getBoolean(ScreenshotManager.KEY_AUTO_ADVANCE, true)) }
     var tapYPct by remember { mutableFloatStateOf(prefs.getFloat(ScreenshotManager.KEY_TAP_Y_PCT, 80f)) }
-    var delayMs by remember { mutableFloatStateOf(prefs.getLong(ScreenshotManager.KEY_DELAY_MS, 1200L).toFloat()) }
+    var delayMs by remember { mutableFloatStateOf(prefs.getLong(ScreenshotManager.KEY_DELAY_MS, ScreenshotManager.DEFAULT_DELAY_MS).toFloat()) }
 
     Card(
         modifier = Modifier.fillMaxWidth().border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
@@ -327,15 +318,15 @@ private fun AutoAdvanceSettingsCard(prefs: SharedPreferences) {
                     colors = SliderDefaults.colors(thumbColor = BrandPurple, activeTrackColor = BrandPurple)
                 )
 
-                Text("Multi-Capture Delay: ${delayMs.toInt()} ms", fontSize = 11.sp, color = TextMuted)
+                Text("Multi-Capture Delay: ${delayMs.toInt()} ms (Default: 300 ms / 0.3s)", fontSize = 11.sp, color = TextMuted)
                 Slider(
                     value = delayMs,
                     onValueChange = {
                         delayMs = it
                         prefs.edit().putLong(ScreenshotManager.KEY_DELAY_MS, it.toLong()).apply()
                     },
-                    valueRange = 500f..3000f,
-                    steps = 25,
+                    valueRange = 100f..3000f,
+                    steps = 29,
                     colors = SliderDefaults.colors(thumbColor = BrandPurple, activeTrackColor = BrandPurple)
                 )
             }

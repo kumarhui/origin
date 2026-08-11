@@ -17,6 +17,7 @@ import android.provider.MediaStore
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import cvam.dignity.dashyhub.service.DesiHubAccessibilityService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -34,8 +35,8 @@ data class ScreenshotItem(
 )
 
 /**
- * Handles screenshot file persistence, gallery operations,
- * temp PDF generation for modal preview, public PDF exports, and OCR.
+ * Centralized manager for Screenshot Taker persistence, image processing,
+ * A4 grid PDF generation with unified pre-cropping, gallery management, and OCR.
  */
 object ScreenshotManager {
 
@@ -47,11 +48,13 @@ object ScreenshotManager {
     const val KEY_TAP_X_PCT = "tap_x_pct"
     const val KEY_TAP_Y_PCT = "tap_y_pct"
     const val KEY_DELAY_MS = "delay_ms"
+    const val KEY_DEFAULT_SHOT_COUNT = "default_shot_count"
 
-    // Default Configuration Constants
+    // Exact Default Configuration Constants
+    const val DEFAULT_SHOT_COUNT = 3
     const val DEFAULT_TAP_X = 1125f
     const val DEFAULT_TAP_Y = 2527f
-    const val DEFAULT_DELAY_MS = 100L // 0.1 sec delay
+    const val DEFAULT_DELAY_MS = 300L // 0.3 sec delay
 
     const val DEFAULT_CROP_TOP = 500f
     const val DEFAULT_CROP_BOTTOM = 2050f
@@ -68,6 +71,39 @@ object ScreenshotManager {
         val dir = File(context.getExternalFilesDir(null), "ScreenshotTaker")
         if (!dir.exists()) dir.mkdirs()
         return dir
+    }
+
+    /**
+     * Resolves the active normalized crop bounds.
+     * Uses active CropOverlayView bounds if active; falls back to default CROP_TOP/BOTTOM bounds.
+     */
+    fun getActiveCropBounds(context: Context): RectF {
+        val activeBounds = DesiHubAccessibilityService.getNormalizedCropBounds()
+        if (activeBounds != null && activeBounds.width() > 0f && activeBounds.height() > 0f) {
+            return activeBounds
+        }
+        // Fallback default crop bounds (CROP_TOP = 500, CROP_BOTTOM = 2050 on standard 2400 reference height)
+        return RectF(0f, 500f / 2400f, 1f, 2050f / 2400f)
+    }
+
+    /**
+     * Centralized image cropping pipeline function.
+     * Crops raw screenshot bitmaps using normalized bounds (0f..1f).
+     */
+    fun cropBitmap(rawBmp: Bitmap, normBounds: RectF?): Bitmap {
+        if (normBounds == null || normBounds.width() <= 0f || normBounds.height() <= 0f) {
+            return rawBmp
+        }
+        val cropL = (normBounds.left * rawBmp.width).toInt().coerceIn(0, rawBmp.width - 1)
+        val cropT = (normBounds.top * rawBmp.height).toInt().coerceIn(0, rawBmp.height - 1)
+        val cropR = (normBounds.right * rawBmp.width).toInt().coerceIn(cropL + 1, rawBmp.width)
+        val cropB = (normBounds.bottom * rawBmp.height).toInt().coerceIn(cropT + 1, rawBmp.height)
+
+        val cropped = Bitmap.createBitmap(rawBmp, cropL, cropT, cropR - cropL, cropB - cropT)
+        if (cropped != rawBmp) {
+            rawBmp.recycle()
+        }
+        return cropped
     }
 
     fun getSavedScreenshots(context: Context): List<ScreenshotItem> {
@@ -165,6 +201,8 @@ object ScreenshotManager {
             color = Color.BLACK
         }
 
+        val activeNormBounds = getActiveCropBounds(context)
+
         for (p in 0 until totalPages) {
             val pageInfo = PdfDocument.PageInfo.Builder(a4Width, a4Height, p + 1).create()
             val page = pdfDocument.startPage(pageInfo)
@@ -182,10 +220,11 @@ object ScreenshotManager {
                 val cellLeft = margin + (c * cellW)
                 val cellTop = margin + (r * cellH)
 
-                val bmp = BitmapFactory.decodeFile(item.file.absolutePath) ?: continue
+                val rawBmp = BitmapFactory.decodeFile(item.file.absolutePath) ?: continue
+                val bmp = cropBitmap(rawBmp, activeNormBounds)
 
-                val availW = cellW - 8f
-                val availH = cellH - 8f
+                val availW = cellW - (DEFAULT_PADDING * 2f)
+                val availH = cellH - (DEFAULT_PADDING * 2f)
 
                 val scale = minOf(availW / bmp.width.toFloat(), availH / bmp.height.toFloat())
                 val drawW = bmp.width * scale

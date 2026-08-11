@@ -26,7 +26,8 @@ import kotlin.math.min
 
 /**
  * Floating Overlay View for Testbook Screenshot Taker.
- * Features an Icon-Only [▶] / [■] Start/Stop button with full accessibility descriptions.
+ * Features a compact icon-only ▶/■ Start/Stop button, Crop toggle,
+ * count controls, and auto-capture sequence execution with 0.3s delay.
  */
 class FloatingScreenshotView @JvmOverloads constructor(
     context: Context,
@@ -46,7 +47,8 @@ class FloatingScreenshotView @JvmOverloads constructor(
     var isCropToolActive: Boolean = false
         private set
 
-    private var targetCount = 10
+    private val prefs = context.getSharedPreferences("screenshot_taker_prefs", Context.MODE_PRIVATE)
+    private var targetCount = prefs.getInt(ScreenshotManager.KEY_DEFAULT_SHOT_COUNT, ScreenshotManager.DEFAULT_SHOT_COUNT)
     private var currentProgress = 0
     private var statusText = "Ready"
 
@@ -220,7 +222,6 @@ class FloatingScreenshotView @JvmOverloads constructor(
 
             if (isCapturingSequence) {
                 contentDescription = "Stop screenshot capture"
-                // Draw Square Stop Icon
                 val sSize = dp(6f)
                 val sRect = RectF(
                     actionBtnRect.centerX() - sSize,
@@ -231,7 +232,6 @@ class FloatingScreenshotView @JvmOverloads constructor(
                 canvas.drawRoundRect(sRect, dp(2f), dp(2f), fillIconPaint)
             } else {
                 contentDescription = "Start screenshot capture"
-                // Draw Triangle Play/Start Icon
                 tempPath.reset()
                 val pSize = dp(6f)
                 tempPath.moveTo(actionBtnRect.centerX() - pSize * 0.7f, actionBtnRect.centerY() - pSize)
@@ -351,6 +351,7 @@ class FloatingScreenshotView @JvmOverloads constructor(
 
     fun expandPanel() {
         if (isPanelExpanded) return
+        targetCount = prefs.getInt(ScreenshotManager.KEY_DEFAULT_SHOT_COUNT, ScreenshotManager.DEFAULT_SHOT_COUNT)
         isPanelExpanded = true
         onRequestResizeListener?.invoke(true)
         invalidate()
@@ -415,12 +416,10 @@ class FloatingScreenshotView @JvmOverloads constructor(
         statusText = "0/$targetCount"
         invalidate()
 
-        val prefs = context.getSharedPreferences("screenshot_taker_prefs", Context.MODE_PRIVATE)
         val autoAdvance = prefs.getBoolean(ScreenshotManager.KEY_AUTO_ADVANCE, true)
-
         val tapX = ScreenshotManager.DEFAULT_TAP_X
         val tapY = ScreenshotManager.DEFAULT_TAP_Y
-        val delayMs = ScreenshotManager.DEFAULT_DELAY_MS
+        val delayMs = prefs.getLong(ScreenshotManager.KEY_DELAY_MS, ScreenshotManager.DEFAULT_DELAY_MS) // 0.3s default
 
         captureJob = viewScope.launch(Dispatchers.IO) {
             for (i in 1..targetCount) {

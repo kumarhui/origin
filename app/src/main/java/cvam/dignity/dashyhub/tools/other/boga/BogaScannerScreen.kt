@@ -58,6 +58,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -205,11 +206,21 @@ fun BogaScannerScreen(
             TopAppBar(
                 title = {
                     if (selectionActive) {
-                        Text("${selectedGalleryItems.size} Selected")
+                        Text(
+                            text = "${selectedGalleryItems.size} Selected",
+                            fontWeight = FontWeight.Bold
+                        )
                     } else {
-                        Text(if (currentScreen == BogaScreen.HOME) "Boga Scanner" else "Preview")
+                        Text(
+                            text = if (currentScreen == BogaScreen.HOME) "Boga Scanner" else "Preview",
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
                 navigationIcon = {
                     if (selectionActive) {
                         IconButton(onClick = { selectedGalleryItems = emptySet() }) {

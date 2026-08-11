@@ -5,24 +5,20 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,22 +26,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.PictureAsPdf
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
@@ -53,14 +42,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -81,7 +68,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -94,7 +80,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.util.Locale
 
 private val BrandPurple = Color(0xFF8E24AA)
 private val TextDark = Color(0xFF0F172A)
@@ -103,6 +88,11 @@ private val BorderColor = Color(0xFFE2E8F0)
 private val StatusActiveBg = Color(0xFFD1FAE5)
 private val StatusActiveText = Color(0xFF047857)
 
+/**
+ * Main Jetpack Compose Screen for Testbook Shot Taker.
+ * Displays accessibility status, delegates gallery rendering to ScreenshotGallery,
+ * and handles PDF export and OCR tools.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenshotTakerScreen(
@@ -120,9 +110,6 @@ fun ScreenshotTakerScreen(
     }
 
     var galleryItems by remember { mutableStateOf<List<ScreenshotItem>>(emptyList()) }
-    var isCapturing by remember { mutableStateOf(false) }
-    var captureProgressText by remember { mutableStateOf("") }
-    var multiCaptureCountInput by remember { mutableStateOf("5") }
 
     var showPdfConfigDialog by remember { mutableStateOf(false) }
     var showPdfPreviewDialog by remember { mutableStateOf(false) }
@@ -168,32 +155,6 @@ fun ScreenshotTakerScreen(
         }
     }
 
-    fun triggerSingleCapture() {
-        val service = DesiHubAccessibilityService.instance
-        if (service == null) {
-            Toast.makeText(context, "Please enable Accessibility Service in Settings (Dashboard → Settings)", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        isCapturing = true
-        captureProgressText = "Capturing display..."
-
-        service.captureScreen(
-            onSuccess = { bitmap ->
-                scope.launch {
-                    ScreenshotManager.saveScreenshotBitmap(context, bitmap)
-                    refreshGallery()
-                    isCapturing = false
-                    Toast.makeText(context, "Screenshot captured & saved!", Toast.LENGTH_SHORT).show()
-                }
-            },
-            onError = { errorMsg ->
-                isCapturing = false
-                Toast.makeText(context, errorMsg, Toast.LENGTH_LONG).show()
-            }
-        )
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -203,7 +164,7 @@ fun ScreenshotTakerScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
             )
         }
     ) { innerPadding ->
@@ -237,56 +198,6 @@ fun ScreenshotTakerScreen(
                 }
             )
 
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .border(1.dp, BorderColor, RoundedCornerShape(12.dp)),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Button(
-                            onClick = { triggerSingleCapture() },
-                            enabled = isAccessibilityEnabled && !isCapturing,
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(44.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = BrandPurple)
-                        ) {
-                            Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Capture Now", fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        }
-
-                        OutlinedTextField(
-                            value = multiCaptureCountInput,
-                            onValueChange = { multiCaptureCountInput = it },
-                            label = { Text("Count", fontSize = 10.sp) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            modifier = Modifier.width(80.dp)
-                        )
-                    }
-
-                    if (isCapturing) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(captureProgressText, fontSize = 12.sp, color = BrandPurple, fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
-            }
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -305,9 +216,8 @@ fun ScreenshotTakerScreen(
                     }
                     IconButton(
                         onClick = {
-                            val selected = galleryItems.filter { it.isSelected }
-                            if (selected.isEmpty()) {
-                                Toast.makeText(context, "Select screenshots for PDF", Toast.LENGTH_SHORT).show()
+                            if (galleryItems.isEmpty()) {
+                                Toast.makeText(context, "No screenshots available for PDF", Toast.LENGTH_SHORT).show()
                             } else {
                                 showPdfConfigDialog = true
                             }
@@ -317,14 +227,13 @@ fun ScreenshotTakerScreen(
                     }
                     IconButton(
                         onClick = {
-                            val selected = galleryItems.filter { it.isSelected }
-                            if (selected.isEmpty()) {
-                                Toast.makeText(context, "Select screenshots for OCR", Toast.LENGTH_SHORT).show()
+                            if (galleryItems.isEmpty()) {
+                                Toast.makeText(context, "No screenshots available for OCR", Toast.LENGTH_SHORT).show()
                             } else {
                                 isOcrRunning = true
                                 showOcrDialog = true
                                 scope.launch {
-                                    ocrResultText = ScreenshotManager.performOcrOnItems(context, selected) { cur, tot ->
+                                    ocrResultText = ScreenshotManager.performOcrOnItems(context, galleryItems) { cur, tot ->
                                         ocrProgressText = "Processing $cur / $tot..."
                                     }
                                     isOcrRunning = false
@@ -334,105 +243,32 @@ fun ScreenshotTakerScreen(
                     ) {
                         Icon(Icons.Default.Description, contentDescription = "OCR", tint = Color(0xFF1E88E5))
                     }
-                    IconButton(
-                        onClick = {
-                            val selected = galleryItems.filter { it.isSelected }
-                            if (selected.isEmpty()) {
-                                Toast.makeText(context, "No items selected to delete", Toast.LENGTH_SHORT).show()
-                            } else {
-                                ScreenshotManager.deleteScreenshots(selected)
-                                refreshGallery()
-                                Toast.makeText(context, "Deleted ${selected.size} items", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color(0xFFD32F2F))
-                    }
                 }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { galleryItems = galleryItems.map { it.copy(isSelected = true) } },
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) { Text("All", fontSize = 11.sp) }
-
-                OutlinedButton(
-                    onClick = { galleryItems = galleryItems.map { it.copy(isSelected = false) } },
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) { Text("None", fontSize = 11.sp) }
-
-                OutlinedButton(
-                    onClick = { galleryItems = galleryItems.map { it.copy(isSelected = !it.isSelected) } },
-                    modifier = Modifier.weight(1f).height(32.dp),
-                    shape = RoundedCornerShape(8.dp)
-                ) { Text("Invert", fontSize = 11.sp) }
-            }
-
-            if (galleryItems.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No screenshots captured yet.", color = TextMuted, fontSize = 13.sp)
+            // Delegated to ScreenshotGallery.kt
+            ScreenshotGallery(
+                galleryItems = galleryItems,
+                onDeleteSelected = { itemsToDelete ->
+                    ScreenshotManager.deleteScreenshots(itemsToDelete)
+                    refreshGallery()
+                    Toast.makeText(context, "Deleted ${itemsToDelete.size} items", Toast.LENGTH_SHORT).show()
+                },
+                onToggleSelectAll = { selectAll ->
+                    // Selection managed within ScreenshotGallery
                 }
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    itemsIndexed(galleryItems, key = { _, item -> item.file.absolutePath }) { index, item ->
-                        GalleryThumbnailCard(
-                            item = item,
-                            index = index,
-                            onToggleSelect = {
-                                galleryItems = galleryItems.toMutableList().apply {
-                                    this[index] = item.copy(isSelected = !item.isSelected)
-                                }
-                            },
-                            onMoveUp = {
-                                if (index > 0) {
-                                    val mutable = galleryItems.toMutableList()
-                                    val temp = mutable[index]
-                                    mutable[index] = mutable[index - 1]
-                                    mutable[index - 1] = temp
-                                    galleryItems = mutable
-                                }
-                            },
-                            onMoveDown = {
-                                if (index < galleryItems.size - 1) {
-                                    val mutable = galleryItems.toMutableList()
-                                    val temp = mutable[index]
-                                    mutable[index] = mutable[index + 1]
-                                    mutable[index + 1] = temp
-                                    galleryItems = mutable
-                                }
-                            }
-                        )
-                    }
-                }
-            }
+            )
         }
     }
 
     if (showPdfConfigDialog) {
         PdfGenerateDialog(
-            selectedCount = galleryItems.count { it.isSelected },
+            selectedCount = galleryItems.size,
             onDismiss = { showPdfConfigDialog = false },
             onGenerate = { isLandscape, cols, rows ->
                 showPdfConfigDialog = false
                 scope.launch {
-                    val selected = galleryItems.filter { it.isSelected }
-                    val tempFile = ScreenshotManager.generateTempPdf(context, selected, isLandscape, cols, rows)
+                    val tempFile = ScreenshotManager.generateTempPdf(context, galleryItems, isLandscape, cols, rows)
                     if (tempFile != null && tempFile.exists()) {
                         previewPdfFile = tempFile
                         previewPdfLandscape = isLandscape
@@ -580,87 +416,6 @@ private fun StatusBanner(
                     )
                 ) {
                     Text(if (isFloatingShowing) "Hide Floating Toolbar" else "Show Floating Toolbar", fontSize = 11.sp)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun GalleryThumbnailCard(
-    item: ScreenshotItem,
-    index: Int,
-    onToggleSelect: () -> Unit,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit
-) {
-    var bmp by remember { mutableStateOf<Bitmap?>(null) }
-
-    LaunchedEffect(item.file.absolutePath) {
-        withContext(Dispatchers.IO) {
-            val options = BitmapFactory.Options().apply { inSampleSize = 4 }
-            bmp = BitmapFactory.decodeFile(item.file.absolutePath, options)
-        }
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(0.7f)
-            .border(
-                BorderStroke(if (item.isSelected) 2.dp else 1.dp, if (item.isSelected) BrandPurple else BorderColor),
-                RoundedCornerShape(8.dp)
-            )
-            .clickable { onToggleSelect() },
-        shape = RoundedCornerShape(8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (bmp != null) {
-                Image(
-                    bitmap = bmp!!.asImageBitmap(),
-                    contentDescription = item.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            } else {
-                Box(modifier = Modifier.fillMaxSize().background(Color.LightGray))
-            }
-
-            Checkbox(
-                checked = item.isSelected,
-                onCheckedChange = { onToggleSelect() },
-                modifier = Modifier.align(Alignment.TopStart)
-            )
-
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = String.format(Locale.getDefault(), "%03d", index + 1),
-                    color = Color.White,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .background(Color.Black.copy(alpha = 0.5f)),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(onClick = onMoveUp, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Up", tint = Color.White)
-                }
-                IconButton(onClick = onMoveDown, modifier = Modifier.size(28.dp)) {
-                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Down", tint = Color.White)
                 }
             }
         }

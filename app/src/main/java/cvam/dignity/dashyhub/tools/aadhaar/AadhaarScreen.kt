@@ -68,16 +68,12 @@ fun AadhaarScreen(navController: NavController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            AadhaarServiceCard(
-                title = "Check Aadhaar Status",
-                icon = Icons.Default.Search,
-                url = "https://myaadhaar.uidai.gov.in/CheckAadhaarStatus/en"
-            )
 
-            AadhaarServiceCard(
-                title = "My Aadhaar Portal",
-                icon = Icons.Default.Home,
-                url = "https://myaadhaar.uidai.gov.in/"
+            AadhaarNavigationCard(
+                title = "Aadhaar Studio",
+                subtitle = "Scan Aadhaar QR, OCR and History",
+                icon = Icons.Default.QrCodeScanner,
+                onClick = { navController.navigate("aadhaar_studio") }
             )
 
             AadhaarServiceCard(
@@ -92,11 +88,16 @@ fun AadhaarScreen(navController: NavController) {
                 url = "https://myaadhaar.uidai.gov.in/genricDownloadAadhaar"
             )
 
-            AadhaarNavigationCard(
-                title = "Aadhaar Studio",
-                subtitle = "Scan Aadhaar QR, OCR and History",
-                icon = Icons.Default.QrCodeScanner,
-                onClick = { navController.navigate("aadhaar_studio") }
+            AadhaarServiceCard(
+                title = "Check Aadhaar Status",
+                icon = Icons.Default.Search,
+                url = "https://myaadhaar.uidai.gov.in/CheckAadhaarStatus/en"
+            )
+
+            AadhaarServiceCard(
+                title = "My Aadhaar Portal",
+                icon = Icons.Default.Home,
+                url = "https://myaadhaar.uidai.gov.in/"
             )
         }
     }

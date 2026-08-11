@@ -1,8 +1,8 @@
 ﻿package cvam.dignity.dashyhub.tools.other
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -12,18 +12,17 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Chat
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Scanner
 import androidx.compose.material3.Card
@@ -37,18 +36,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.surfaceColorAtElevation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,23 +56,15 @@ fun OtherToolsScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {
-                    Column {
-                        Text("Other Tools", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            "Specialized utilities & overlays",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
+                title = { Text(text = "Other Tools", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             )
         }
@@ -84,43 +75,35 @@ fun OtherToolsScreen(navController: NavController) {
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // First Tool Card (WhatsApp Direct)
-            ModernToolCard(
+            OtherToolCard(
                 title = "WhatsApp Direct",
-                badge = "Direct Chat",
-                description = "Chat with any phone number directly without saving it to your contacts.",
+                subtitle = "Chat without saving numbers",
                 icon = Icons.Default.Chat,
                 accentColor = Color(0xFF10B981),
                 onClick = { navController.navigate("whatsapp_checker") }
             )
 
-            // Second Tool Card (Boga Scanner)
-            ModernToolCard(
+            OtherToolCard(
                 title = "Boga Scanner",
-                badge = "ID & Document Scanner",
-                description = "Scan documents and ID cards into optimized A4 PDF/JPEG sheets.",
+                subtitle = "Scan documents & ID cards",
                 icon = Icons.Default.Scanner,
                 accentColor = Color(0xFF0284C7),
                 onClick = { navController.navigate("boga") }
             )
 
-            // Third Tool Card (Neon Pen Writer)
-            ModernToolCard(
+            OtherToolCard(
                 title = "Neon Pen Writer",
-                badge = "Floating Overlay",
-                description = "Draw and write notes over any application with a floating neon pen.",
+                subtitle = "Draw & write notes over any app",
                 icon = Icons.Default.EditNote,
                 accentColor = Color(0xFFFF007F),
                 onClick = { navController.navigate("neon_pen") }
             )
 
-            // Fourth Tool Card (Testbook Shot Taker)
-            ModernToolCard(
+            OtherToolCard(
                 title = "Testbook Shot Taker",
-                badge = "OCR & PDF Suite",
-                description = "Capture screenshots, organize them, create multi-grid PDFs, and extract text via OCR.",
+                subtitle = "Capture screenshots, create PDFs & OCR",
                 icon = Icons.Default.CameraAlt,
                 accentColor = Color(0xFF8E24AA),
                 onClick = { navController.navigate("screenshot_taker") }
@@ -130,10 +113,9 @@ fun OtherToolsScreen(navController: NavController) {
 }
 
 @Composable
-private fun ModernToolCard(
+fun OtherToolCard(
     title: String,
-    badge: String,
-    description: String,
+    subtitle: String,
     icon: ImageVector,
     accentColor: Color,
     onClick: () -> Unit
@@ -142,8 +124,14 @@ private fun ModernToolCard(
     val isPressed by interactionSource.collectIsPressedAsState()
 
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f,
-        label = "ToolCardPressScale"
+        targetValue = if (isPressed) 0.96f else 1f,
+        label = "CardPressScale"
+    )
+
+    val containerColor by animateColorAsState(
+        targetValue = if (isPressed) MaterialTheme.colorScheme.surfaceColorAtElevation(8.dp)
+        else MaterialTheme.colorScheme.surface,
+        label = "CardColorAnimation"
     )
 
     Card(
@@ -152,29 +140,29 @@ private fun ModernToolCard(
         modifier = Modifier
             .fillMaxWidth()
             .scale(scale),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 0.5.dp,
+            pressedElevation = 2.dp
+        ),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = containerColor,
         ),
         border = BorderStroke(
             width = 1.dp,
             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 1.dp,
-            pressedElevation = 4.dp
         )
     ) {
         Row(
             modifier = Modifier
-                .padding(16.dp)
+                .padding(12.dp)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
                 shape = RoundedCornerShape(16.dp),
                 color = accentColor.copy(alpha = 0.12f),
-                modifier = Modifier.size(52.dp)
+                modifier = Modifier.size(48.dp)
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
@@ -186,54 +174,28 @@ private fun ModernToolCard(
                 }
             }
 
-            Spacer(modifier = Modifier.width(14.dp))
+            Spacer(modifier = Modifier.width(12.dp))
 
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = title,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-                    Box(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .background(accentColor.copy(alpha = 0.15f))
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                    ) {
-                        Text(
-                            text = badge,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = accentColor
-                        )
-                    }
-                }
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
-                    text = description,
-                    fontSize = 13.sp,
+                    text = subtitle,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    lineHeight = 18.sp
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Open",
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-                modifier = Modifier.size(20.dp)
-            )
         }
     }
 }
