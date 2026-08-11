@@ -6,8 +6,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 
 import cvam.dignity.dashyhub.dashboard.DashboardScreen
+import cvam.dignity.dashyhub.settings.AppSettingsScreen
 
-// Assuming these exist in their respective packages as outlined
 import cvam.dignity.dashyhub.tools.aadhaar.AadhaarScreen
 import cvam.dignity.dashyhub.tools.aadhaar.AadhaarStudioScreen
 import cvam.dignity.dashyhub.tools.image.ImageToolsScreen
@@ -18,6 +18,7 @@ import cvam.dignity.dashyhub.tools.other.OtherToolsScreen
 import cvam.dignity.dashyhub.tools.other.WhatsappCheckerScreen
 import cvam.dignity.dashyhub.tools.other.boga.BogaScannerScreen
 import cvam.dignity.dashyhub.tools.pdf.PdfToolsScreen
+import cvam.dignity.dashyhub.tools.screenshottaker.ScreenshotTakerScreen
 
 @Composable
 fun AppNavigation() {
@@ -27,12 +28,16 @@ fun AppNavigation() {
         navController = navController,
         startDestination = "dashboard"
     ) {
-        // Main Entry Screen
         composable("dashboard") {
             DashboardScreen(navController = navController)
         }
 
-        // Modular Tools Destinations
+        composable("app_settings") {
+            AppSettingsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
         composable("aadhaar") {
             AadhaarScreen(navController = navController)
         }
@@ -74,12 +79,18 @@ fun AppNavigation() {
         composable("neon_pen") {
             NeonPenScreen(
                 onBack = { navController.popBackStack() },
-                onNavigateToSettings = { navController.navigate("neon_pen_settings") }
+                onNavigateToSettings = { navController.navigate("app_settings") }
             )
         }
 
         composable("neon_pen_settings") {
             NeonPenSettingsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("screenshot_taker") {
+            ScreenshotTakerScreen(
                 onBack = { navController.popBackStack() }
             )
         }

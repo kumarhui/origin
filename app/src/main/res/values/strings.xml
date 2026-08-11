@@ -1,4 +1,4 @@
 <resources>
-    <string name="app_name">Neon Pen Writer</string>
-    <string name="accessibility_service_description">Used to ensure floating controls stay accessible over all applications.</string>
+    <string name="app_name">DashyHub</string>
+    <string name="desihub_accessibility_description">Allows Desi Hub to capture screenshots, display floating overlay tools, and perform touch gestures across applications.</string>
 </resources>

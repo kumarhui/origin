@@ -85,10 +85,6 @@ private enum class BogaScreen {
     HOME, PREVIEW, GALLERY_PREVIEW
 }
 
-/**
- * BogaScannerScreen is the main Jetpack Compose UI for the Boga Document Scanner tool.
- * Handles document scanning, live A4 sheet preview, gallery management, sharing, and printing.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BogaScannerScreen(
@@ -100,26 +96,22 @@ fun BogaScannerScreen(
 
     var currentScreen by remember { mutableStateOf(BogaScreen.HOME) }
 
-    // Gallery state
     var galleryItems by remember { mutableStateOf<List<BogaPdfUtils.GalleryItem>>(emptyList()) }
     var selectedGalleryItems by remember { mutableStateOf<Set<BogaPdfUtils.GalleryItem>>(emptySet()) }
     val selectionActive by remember { derivedStateOf { selectedGalleryItems.isNotEmpty() } }
     var previewGalleryItem by remember { mutableStateOf<BogaPdfUtils.GalleryItem?>(null) }
 
-    // Scanner state
     var frontUri by remember { mutableStateOf<Uri?>(null) }
     var backUri by remember { mutableStateOf<Uri?>(null) }
     var normalUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var isIdCardMode by remember { mutableStateOf(true) }
 
-    // UI state flags
     var showDocTypeDialog by remember { mutableStateOf(false) }
     var showBackScanDialog by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var isProcessing by remember { mutableStateOf(false) }
     var isVerticalLayout by remember { mutableStateOf(false) }
 
-    // Generated preview bitmaps
     var previewBitmaps by remember { mutableStateOf<List<Bitmap>>(emptyList()) }
 
     fun loadGallery() {
