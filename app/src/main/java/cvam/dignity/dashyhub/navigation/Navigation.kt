@@ -14,6 +14,7 @@ import cvam.dignity.dashyhub.tools.image.ImageToolsScreen
 import cvam.dignity.dashyhub.tools.image.passport_photo_maker.PassportPhotoScreen
 import cvam.dignity.dashyhub.tools.other.OtherToolsScreen
 import cvam.dignity.dashyhub.tools.other.WhatsappCheckerScreen
+import cvam.dignity.dashyhub.tools.other.boga.BogaScannerScreen
 import cvam.dignity.dashyhub.tools.pdf.PdfToolsScreen
 
 @Composable
@@ -60,6 +61,10 @@ fun AppNavigation() {
 
         composable("whatsapp_checker") {
             WhatsappCheckerScreen()
+        }
+
+        composable("boga") {
+            BogaScannerScreen()
         }
     }
 }

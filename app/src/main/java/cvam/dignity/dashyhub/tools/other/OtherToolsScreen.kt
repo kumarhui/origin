@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,6 +54,12 @@ fun OtherToolsScreen(
                     subtitle = "Check if a number exists on WhatsApp",
                     icon = Icons.Default.Chat,
                     onClick = { navController.navigate("whatsapp_checker") }
+                )
+                OtherToolNavigationCard(
+                    title = "Boga Document Scanner",
+                    subtitle = "Scan and manage documents",
+                    icon = Icons.Default.Description,
+                    onClick = { navController.navigate("boga") }
                 )
             }
         }
